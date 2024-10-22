@@ -60,6 +60,9 @@ if st.button("Predict"):
     results = X_test[selected_features].copy()
     results['actual_y'] = y_test.values  # Make sure actual_y is copied here
     results['predicted_y'] = X_test["age_predicted_y"]
+    
+    # Debugging: Print the columns of results DataFrame
+    st.write("Results DataFrame Columns:", results.columns.tolist())
     st.write(results)
 
 # Optionally display the test set predictions with distances
@@ -72,5 +75,11 @@ if st.checkbox("Show Full Test Set Predictions"):
             distances.append(squared_distance**0.5)
         X_test["distance"] = distances
     
+    # Debugging: Print available columns before displaying
+    st.write("Available columns for display:", X_test.columns.tolist())
+    
     # Now safely display the relevant columns
-    st.write(X_test[['distance', 'actual_y', 'age_predicted_y'] + selected_features])
+    try:
+        st.write(X_test[['distance', 'actual_y', 'age_predicted_y'] + selected_features])
+    except KeyError as e:
+        st.write(f"KeyError: {e}. Check if all specified columns exist.")
