@@ -120,3 +120,4 @@ if st.checkbox("Show Full Test Set Predictions"):
     # Safely display the relevant columns
     st.subheader("Test Set Predictions with Distances")
     st.dataframe(X_test[['distance', 'actual_y', 'age_predicted_y'] + selected_features])
+    
