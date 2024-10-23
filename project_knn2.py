@@ -1,5 +1,7 @@
 import pandas as pd
 import streamlit as st
+import plotly.express as px
+import plotly.graph_objects as go
 
 # Load the data
 data = pd.read_csv("subscription_prediction.csv")
@@ -26,8 +28,30 @@ def knn(features, single_test_input, k):
     prediction = y_train[X_train["distance"].nsmallest(n=k).index].mode()[0]
     return prediction
 
-# Streamlit application
-st.title("KNN Subscription Prediction")
+# Custom CSS for colorful cards and layout
+st.markdown("""
+    <style>
+    .card {
+        border-radius: 15px;
+        padding: 20px;
+        margin: 10px;
+        font-size: 22px;
+        color: white;
+        background-color: #4CAF50;
+        text-align: center;
+        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+        transition: 0.3s;
+    }
+    .card:hover {
+        background-color: #3e8e41;
+    }
+    .card-blue {background-color: #1E90FF;}
+    .card-orange {background-color: #FF5722;}
+    .container {display: flex; justify-content: space-between; flex-wrap: wrap;}
+    </style>
+    """, unsafe_allow_html=True)
+
+st.title("🎨 Subscription Prediction Dashboard")
 
 # Feature selection for prediction
 available_features = X.columns.tolist()
@@ -44,8 +68,7 @@ if st.button("Predict"):
     
     # Make a prediction
     model_prediction = knn(selected_features, single_test_input, 3)
-    st.write(f"Predicted label: {model_prediction}")
-
+    
     # Calculate predictions for the entire test set based on the selected features
     X_test["age_predicted_y"] = X_test.apply(lambda x: knn(selected_features, x, 3), axis=1)
     
@@ -54,16 +77,35 @@ if st.button("Predict"):
 
     # Calculate accuracy
     accuracy = (X_test["age_predicted_y"] == y_test).mean() * 100
-    st.write(f"Model Accuracy: {accuracy:.2f}%")
+
+    # Display key metrics as colorful cards
+    st.markdown(f"""
+    <div class="container">
+        <div class="card card-blue">Predicted Subscription: {model_prediction}</div>
+        <div class="card card-orange">Model Accuracy: {accuracy:.2f}%</div>
+    </div>
+    """, unsafe_allow_html=True)
 
     # Show detailed predictions
     results = X_test[selected_features].copy()
     results['actual_y'] = y_test.values  # Make sure actual_y is copied here
     results['predicted_y'] = X_test["age_predicted_y"]
-    
-    # Debugging: Print the columns of results DataFrame
-    st.write("Results DataFrame Columns:", results.columns.tolist())
-    st.write(results)
+
+    # Plotly chart for actual vs predicted
+    fig = px.scatter(results, x='actual_y', y='predicted_y',
+                     title="Actual vs Predicted Subscriptions",
+                     labels={"actual_y": "Actual", "predicted_y": "Predicted"},
+                     color="actual_y", symbol="predicted_y")
+
+    st.plotly_chart(fig)
+
+    # Show a bar chart for feature importance or sample values (mock example)
+    fig_bar = px.bar(x=selected_features, y=feature_inputs.values(), title="Feature Values Input")
+    st.plotly_chart(fig_bar)
+
+    # Display predictions in table
+    st.subheader("Detailed Predictions")
+    st.dataframe(results)
 
 # Optionally display the test set predictions with distances
 if st.checkbox("Show Full Test Set Predictions"):
@@ -75,11 +117,6 @@ if st.checkbox("Show Full Test Set Predictions"):
             distances.append(squared_distance**0.5)
         X_test["distance"] = distances
     
-    # Debugging: Print available columns before displaying
-    st.write("Available columns for display:", X_test.columns.tolist())
-    
-    # Now safely display the relevant columns
-    try:
-        st.write(X_test[['distance', 'actual_y', 'age_predicted_y'] + selected_features])
-    except KeyError as e:
-        st.write(f"KeyError: {e}. Check if all specified columns exist.")
+    # Safely display the relevant columns
+    st.subheader("Test Set Predictions with Distances")
+    st.dataframe(X_test[['distance', 'actual_y', 'age_predicted_y'] + selected_features])
